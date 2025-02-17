@@ -111,6 +111,39 @@ TEST_CASE("[TranslationPO] Messages with context") {
 	CHECK(messages.find("Hello3"));
 }
 
+TEST_CASE("[TranslationP0] Messages with multiple contexts") {
+	Ref<TranslationPO> translation = memnew(TranslationPO);
+	translation->set_locale("es");
+	translation->add_message("Hello", "Hola");
+	translation->add_message("Hello", "Saludos", "friendly");
+	translation->add_message("Hello", "Diga", "phone_greeting");
+	translation->add_message("Hello", "Anda", "surprised");
+	translation->add_message("Hello", "Hey", "colloquial");
+
+	CHECK(translation->get_message("Hello") == "Hola");
+	CHECK(translation->get_message("Hello", "friendly") == "Saludos");
+	CHECK(translation->get_message("Hello", "phone_greeting") == "Diga");
+	CHECK(translation->get_message("Hello", "surprised") == "Anda");
+	CHECK(translation->get_message("Hello", "colloquial") == "Hey");
+	CHECK(translation->get_message("Hello", "nonexistent_context") == "");
+
+	// Only remove the translation for the "friendly" context, not the rest of the contexts or the default.
+	translation->erase_message("Hello", "friendly");
+	CHECK(translation->get_message("Hello") == "Hola");
+	// The context for friendly no longer exists, so it returns an empty string instead.
+	CHECK(translation->get_message("Hello, friendly") == "");
+	CHECK(translation->get_message("Hello, surprised") == "Anda");
+
+	List<StringName> messages;
+	translation->get_message_list(&messages);
+
+	// `get_message_count()` takes all contexts into account.
+	CHECK(translation->get_message_count() == 4);
+	// Only the default context is taken into account.
+	// Since "Hello" is the only default context, none of the other translations are taken into account.
+	CHECK(messages.size() == 1);
+}
+
 TEST_CASE("[TranslationPO] Plural messages") {
 	Ref<TranslationPO> translation = memnew(TranslationPO);
 	translation->set_locale("fr");
